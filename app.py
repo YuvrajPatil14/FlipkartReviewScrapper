@@ -6,8 +6,31 @@ from flask_cors import cross_origin
 import requests
 from bs4 import BeautifulSoup as bs
 from urllib.request import urlopen as uReq
+import urllib.request
 
 app = Flask(__name__)  # initialising the flask app with the name 'app'
+
+# headers = {'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36'}
+headers = {
+    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
+'Accept-Language': 'en-GB,en-US;q=0.9,en;q=0.8',
+'Connection': 'keep-alive',
+'Host': 'www.flipkart.com',
+'Sec-Fetch-Dest': 'document',
+'Sec-Fetch-Mode': 'navigate',
+'Sec-Fetch-Site': 'none',
+'Sec-Fetch-User': '?1',
+'Upgrade-Insecure-Requests': '1',
+'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36',
+'sec-ch-ua': '"Google Chrome";v="119", "Chromium";v="119", "Not?A_Brand";v="24"',
+'sec-ch-ua-arch': "x86",
+'sec-ch-ua-full-version': "119.0.6045.159",
+'sec-ch-ua-full-version-list': '"Google Chrome";v="119.0.6045.159", "Chromium";v="119.0.6045.159", "Not?A_Brand";v="24.0.0.0"',
+'sec-ch-ua-mobile': '?0',
+'sec-ch-ua-model': "",
+'sec-ch-ua-platform': "Linux",
+'sec-ch-ua-platform-version': "5.15.0",
+}
 
 @app.route('/', methods=['GET']) # '/' is base url = ip address + port number = http://127.0.0.1:5000/
 @cross_origin()
@@ -23,16 +46,20 @@ def index():
         searchString = request.form['content'].replace(" ","") # form is a class in index.html and the text we enter is stored in 'content' , we are obtaining the textt entered there
         try:
             flipkart_url = "https://www.flipkart.com/search?q=" + searchString # preparing the URL to search the product on flipkart
-            uClient = uReq(flipkart_url) # requesting the webpage from the internet
+            req = urllib.request.Request(flipkart_url, headers=headers)
+            uClient = uReq(req) # requesting the webpage from the internet
+            # print(uClient)
             flipkartPage = uClient.read() # reading the webpage
             uClient.close() # closing the connection to the web server
             flipkart_html = bs(flipkartPage, "html.parser") # parsing the webpage as HTML
+            # print(flipkartPage)
             bigboxes = flipkart_html.findAll("div", {"class": "_1AtVbE col-12-12"}) # seacrhing for appropriate tag to redirect to the product link
             del bigboxes[0:3] # the first 3 members of the list do not contain relevant information, hence deleting them.
             box = bigboxes[0] #  taking the first iteration (for demo)
             productLink = "https://www.flipkart.com" + box.div.div.a['href'] # extracting the actual product link
-            prodRes = requests.get(productLink) # getting the product page from server
+            prodRes = requests.get(productLink,headers=headers) # getting the product page from server
             prod_html = bs(prodRes.text, "html.parser") # parsing the product page as HTML
+            # print(prod_html)
             commentboxes = prod_html.find_all('div', {'class': "_16PBlm"}) # finding the HTML section containing the customer comments
 
             # table = db[searchString] # creating a collection with the same name as search string. Tables and Collections are analogous.
